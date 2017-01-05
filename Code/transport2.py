@@ -1,4 +1,5 @@
 import copy
+import time
 
 def readFile(fileName):
 	file = open ( '../Inputs/secondInput.txt' , 'r')
@@ -9,6 +10,96 @@ def readFile(fileName):
 			matrix[i][j] = [None,int(matrix[i][j])]
 
 	return matrix
+
+def fillZero(matrix):
+	for i in range(len(matrix)):
+		for j in range(len(matrix[i])):
+			matrix[i][j] = [None,0]
+
+	return matrix
+
+def start():
+
+	qtdOrigens = int(raw_input('Quandtidade origens: '))
+	qtdDestinos = int(raw_input('Quandtidade destinos: '))
+	qtdTransbordos = int(raw_input('Quandtidade transbordos: '))
+
+	origens = []
+	destinos = []
+	ofertas = []
+	demandas  = []
+	transbordos = []
+	capTransbordos = []
+	demTransbordos = []
+
+	for i in range(qtdOrigens):
+		nome = raw_input("Nome da origem numero %d: " %i)
+		valor = int(raw_input("Oferta da origem numero %d: " %i))
+		origens.append(nome)
+		ofertas.append(valor)
+
+	for i in range(qtdDestinos):
+		nome = raw_input("Nome do destino numero %d: " %i)
+		valor = int(raw_input("Demanda da origem numero %d: " %i))
+		destinos.append(nome)
+		demandas.append(valor)	
+
+	for i in range(qtdTransbordos):
+		nome = raw_input("Nome do transbordo numero %d: " %i)
+		transbordos.append(nome)
+		valor = int(raw_input("Informe a capacidade do transbordo numero %d, caso ele tambem seja uma origem (ou 0 caso contrario): " %i))
+		capTransbordos.append(valor)
+		valor2 = int(raw_input("Informe a demanda do transbordo numero %d, caso ele tambem seja uma demanda (ou 0 caso contrario): " %i))
+		demTransbordos.append(valor2)
+
+	if sum(ofertas) > sum(demandas):
+		destinos.append("Artificial")
+		demandas.append(sum(ofertas)-sum(demandas))
+		qtdDestinos = qtdDestinos + 1
+
+
+	elif sum(ofertas) < sum(demandas):
+		origens.append("Artificial")
+		ofertas.append(sum(demandas) - sum(ofertas))
+		qtdOrigens = qtdOrigens + 1
+
+
+	matrix = createMatrix((qtdOrigens+qtdTransbordos+1),(qtdDestinos+qtdTransbordos+1))
+	matrix = fillZero(matrix)		
+
+	for i in range(len(matrix)-1):
+		for j in range(len(matrix[0])-1):
+			if i < qtdOrigens and j < qtdTransbordos: 
+				valor = int(raw_input("Custo de %s para %s: " %(origens[i],transbordos[j])))
+				matrix[i][j][1] = valor
+			elif i < qtdOrigens and j >= qtdTransbordos:	
+				valor = int(raw_input("Custo de %s para %s: " %(origens[i],destinos[j-qtdTransbordos])))
+				matrix[i][j][1] = valor
+			elif i >= qtdOrigens and j < qtdTransbordos: 
+				valor = int(raw_input("Custo de %s para %s: " %(transbordos[i-qtdOrigens],transbordos[j])))
+				matrix[i][j][1] = valor
+			elif i >= qtdOrigens and j >= qtdTransbordos:	
+				valor = int(raw_input("Custo de %s para %s: " %(transbordos[i-qtdOrigens],destinos[j-qtdTransbordos])))
+				matrix[i][j][1] = valor	
+
+	for i in range(qtdOrigens):
+		print i
+		matrix[i][len(matrix[0])-1][1] = ofertas[i]
+
+	for i in range(qtdOrigens,len(matrix)-1):
+		matrix[i][len(matrix[0])-1][1] = sum(ofertas)+capTransbordos[i-qtdOrigens]
+		# matrix[i][len(matrix[0])-1][1] = capTransbordos[i-qtdOrigens]
+
+	for i in range(qtdTransbordos):
+		matrix[len(matrix)-1][i][1] = sum(demandas)+demTransbordos[i]
+		#matrix[len(matrix)-1][i][1] = demTransbordos[i]
+
+	for i in range(qtdTransbordos,len(matrix[0])-1):
+		matrix[len(matrix)-1][i][1] = demandas[i - qtdTransbordos]
+
+	
+
+	return matrix	
 
 def createMatrix(lin, col):
 	matrix = []
@@ -57,7 +148,8 @@ def otimalidade(matrix, val):
 					if(u[i] == None and i == val_original):
 						u[i] = 0
 						print "\nu[i]: ", u[i]
-					elif(u[i] == None and i != val_original):			
+					elif(u[i] == None and i != val_original):	
+						print "*************************\n"		
 						if(v[j]== None):
 							continue
 						u[i] = matrix[i][j][1] - v[j]
@@ -235,11 +327,18 @@ def ajustaCaminho(m, perc, mOriginal,p):
 	
 	valor = 0
 	valorReal = []
+	posValorReal = []
+	
 	for i in range(len(perc)):
 		if i%2 != 0 and i != len(perc)-1:
 			valorReal.append(m[perc[i][0]][perc[i][1]][0])
+			posValorReal.append(perc[i])
 				
 	menorValor = min(valorReal)
+	
+	for i in range(len(valorReal)):
+		if(valorReal[i] == menorValor):
+			posCerto = posValorReal[i]
 	
 	for i in range(len(perc)):
 		if i%2 == 0 and i != 0 and i != len(perc)-1:
@@ -249,11 +348,7 @@ def ajustaCaminho(m, perc, mOriginal,p):
 		else:
 			matrixNova[perc[i][0]][perc[i][1]][0] = menorValor		 
 
-	for i in range(len(m)):
-		for j in range(len(m[i])):
-			if matrixNova[i][j][0] == 0:
-				matrixNova[i][j][0] = None
-
+	matrixNova[posCerto[0]][posCerto[1]][0] = None
 	return matrixNova
 
 def exibeResultado(p,matrix):	
@@ -272,8 +367,10 @@ def exibeResultado(p,matrix):
 
 
 
-m = readFile("input.txt")
-mOriginal = readFile("input.txt")
+# m = readFile("input.txt")
+m = start()
+# mOriginal = readFile("input.txt")
+mOriginal = copy.deepcopy(m)
 cam = cantoNoroeste(m)
 start_valor = 0
 
