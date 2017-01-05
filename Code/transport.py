@@ -1,14 +1,90 @@
 import copy
+import time
 
-def readFile(fileName):
-	file = open ( '../Inputs/firstInput.txt' , 'r')
-	matrix = []
-	matrix = [ line.split() for line in file]
+def fillZero(matrix):
 	for i in range(len(matrix)):
 		for j in range(len(matrix[i])):
-			matrix[i][j] = [None,int(matrix[i][j])]
+			matrix[i][j] = [None,0]
 
 	return matrix
+
+def start():
+
+	qtdOrigens = int(raw_input('Quandtidade origens: '))
+	qtdDestinos = int(raw_input('Quandtidade destinos: '))
+	qtdTransbordos = int(raw_input('Quandtidade transbordos: '))
+
+	origens = []
+	destinos = []
+	ofertas = []
+	demandas  = []
+	transbordos = []
+	capTransbordos = []
+	demTransbordos = []
+
+	for i in range(qtdOrigens):
+		nome = raw_input("Nome da origem numero %d: " %i)
+		valor = int(raw_input("Oferta da origem numero %d: " %i))
+		origens.append(nome)
+		ofertas.append(valor)
+
+	for i in range(qtdDestinos):
+		nome = raw_input("Nome do destino numero %d: " %i)
+		valor = int(raw_input("Demanda da origem numero %d: " %i))
+		destinos.append(nome)
+		demandas.append(valor)	
+
+	for i in range(qtdTransbordos):
+		nome = raw_input("Nome do transbordo numero %d: " %i)
+		transbordos.append(nome)
+		valor = int(raw_input("Informe a capacidade do transbordo numero %d, caso ele tambem seja uma origem (ou 0 caso contrario): " %i))
+		capTransbordos.append(valor)
+		valor2 = int(raw_input("Informe a demanda do transbordo numero %d, caso ele tambem seja uma demanda (ou 0 caso contrario): " %i))
+		demTransbordos.append(valor2)
+
+	if sum(ofertas) > sum(demandas):
+		destinos.append("Artificial")
+		demandas.append(sum(ofertas)-sum(demandas))
+		qtdDestinos = qtdDestinos + 1
+
+
+	elif sum(ofertas) < sum(demandas):
+		origens.append("Artificial")
+		ofertas.append(sum(demandas) - sum(ofertas))
+		qtdOrigens = qtdOrigens + 1
+
+
+	matrix = createMatrix((qtdOrigens+qtdTransbordos+1),(qtdDestinos+qtdTransbordos+1))
+	matrix = fillZero(matrix)		
+
+	for i in range(len(matrix)-1):
+		for j in range(len(matrix[0])-1):
+			if i < qtdOrigens and j < qtdTransbordos: 
+				valor = int(raw_input("Custo de %s para %s: " %(origens[i],transbordos[j])))
+				matrix[i][j][1] = valor
+			elif i < qtdOrigens and j >= qtdTransbordos:	
+				valor = int(raw_input("Custo de %s para %s: " %(origens[i],destinos[j-qtdTransbordos])))
+				matrix[i][j][1] = valor
+			elif i >= qtdOrigens and j < qtdTransbordos: 
+				valor = int(raw_input("Custo de %s para %s: " %(transbordos[i-qtdOrigens],transbordos[j])))
+				matrix[i][j][1] = valor
+			elif i >= qtdOrigens and j >= qtdTransbordos:	
+				valor = int(raw_input("Custo de %s para %s: " %(transbordos[i-qtdOrigens],destinos[j-qtdTransbordos])))
+				matrix[i][j][1] = valor	
+
+	for i in range(qtdOrigens):
+		matrix[i][len(matrix[0])-1][1] = ofertas[i]
+
+	for i in range(qtdOrigens,len(matrix)-1):
+		matrix[i][len(matrix[0])-1][1] = sum(ofertas)+capTransbordos[i-qtdOrigens]
+
+	for i in range(qtdTransbordos):
+		matrix[len(matrix)-1][i][1] = sum(demandas)+demTransbordos[i]
+
+	for i in range(qtdTransbordos,len(matrix[0])-1):
+		matrix[len(matrix)-1][i][1] = demandas[i - qtdTransbordos]
+
+	return matrix,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos	
 
 def createMatrix(lin, col):
 	matrix = []
@@ -16,8 +92,8 @@ def createMatrix(lin, col):
 		matrix.append([0] * col)
 
 	return matrix
-
-def otimalidade(matrix):
+			
+def otimalidade(matrix, val):
 	v = range(len(matrix[0])-1)
 	u = range(len(matrix)-1)
 	
@@ -26,18 +102,29 @@ def otimalidade(matrix):
 
 	for i in range(len(u)):
 		u[i] = None	
+	
+	val_original = val%(len(matrix)-1)
+	
+	while(1):
 
-	for i in range(len(matrix)-1):
-		for j in range(len(matrix[0])-1):
-			if (matrix[i][j][0] != None):
-				if(u[i] == None and i == 0):
-					u[i] = 0
-				elif(u[i] == None and i != 0):			
-					u[i] = matrix[i][j][1] - v[j] 
-				
-				if(v[j] == None):
-					v[j] = matrix[i][j][1] - u[i]		
+		if(None in u or None in v):
+			i = val%(len(matrix))	
+			for j in range(len(matrix[0])-1):
+				if (matrix[i][j][0] != None):
+					if(u[i] == None and i == val_original):
+						u[i] = 0
+					elif(u[i] == None and i != val_original):		
+						if(v[j]== None):
+							continue
+						u[i] = matrix[i][j][1] - v[j] 
+					
+					if(v[j] == None):
+						v[j] = matrix[i][j][1] - u[i]	
+			val = val + 1
 
+		else:
+			break
+	
 	return u,v				
 
 def cantoNoroeste(matrix):
@@ -72,7 +159,7 @@ def cantoNoroeste(matrix):
 				z = z + matrix[i][j][0] * matrix[i][j][1]
 				cam.append([i,j])
 
-	print z
+	print "\nZ = ",z
 	return cam
 
 def caminho(matrix):
@@ -95,9 +182,7 @@ def fill(matrix, u, v):
 				if (matrix[i][j][0] < valor):
 					valor = matrix[i][j][0]
 					teste = [i,j]
-
-	print "FILL: ", matrix
-	print "\n"				
+				
 	return teste, valor				
 
 
@@ -118,22 +203,14 @@ def get_na_coluna(caminho,val):
 	return elem_da_linha
 
 def percurso2(resposta,caminho_copia,end_val,val,onde):
-	# print "\nCAMINHO COPIA:",caminho_copia
-	# print "\nRESPOSTA:",resposta
-	if(onde == 1): #1 = linha
-		# print "PERCURSO NA LINHA\n"
-		# print "VAL: ", val
+	if(onde == 1):
 		firstcount = 0
 		elem_da_linha = get_na_linha(caminho_copia,val)	
 		if len(elem_da_linha)==0: # NAO HA ELEMENTO NENHUM NA LINHA
-			# print "\nNAO HA ELEMENTOS NESTA LINHA\n"
-			resposta.remove(resposta[len(resposta)-1])
 			return 0,0;
-		# print "\nELEMENTOS DESTA LINHA: ",elem_da_linha
-
+		
 		for j in elem_da_linha:
 			if(j[0][0]==end_val[0] and j[0][1]==end_val[1]):# PROXIMO ELEMENTO EH O MINIMO
-				# print "ENCONTROU END_VAL ",end_val
 				resposta.append(end_val)
 				return 1,reposta
 		
@@ -142,56 +219,43 @@ def percurso2(resposta,caminho_copia,end_val,val,onde):
 			if(i == end_val):
 				firstcount = 1
 		if(firstcount==0):
-			# print "\nADICIONOU ENDVAL AO CAMINHO"
 			caminho_copia.append(end_val)
 
 		for i in elem_da_linha:
-			# print "\nELEMENTO:",i
 			copia_aux = list(caminho_copia)
 			copia_aux.remove(i[0])
-			# print "\n||||||||||||||||||||||||||||||||\n"
 			resposta.append(i[0])
 			x, flag = percurso2(resposta,copia_aux,end_val,i[0],0)
-			# print "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-			# print "X RETORNADO :",x
 			if(x!=0):
-				# print "\nX diferente de zero"
 				if(flag!=0):
 					
 					return 1,resposta
 				return 1,0
+			elif(x==0):
+				resposta.remove(resposta[len(resposta)-1])
+		
 
-	# print "\nPROCURANDO AGORA NA COLUNA\n"
-	# print "VAL: ", val
 	elem_da_col = get_na_coluna(caminho_copia,val)
 	if len(elem_da_col)==0: # NAO HA ELEMENTO NENHUM NA COLUNA
-		# print "\nNAO HA ELEMENTOS NESTA COLUNA\n"
-		resposta.remove(resposta[len(resposta)-1])
 		return 0,0;
-	# print "\nELEMENTOS DESTA COLUNA: ",elem_da_col
-
+	
 	for j in elem_da_col:
 		if(j[0][0]==end_val[0] and j[0][1]==end_val[1]):# PROXIMO ELEMENTO EH O MINIMO
-			# print "ENCONTROL END_VAL", end_val
 			resposta.append(end_val)
 			return 1,resposta
 
 	for i in elem_da_col:
-		# print "\nELEMENTO:",i
 		copia_aux = list(caminho_copia)
 		copia_aux.remove(i[0])
-		# print "\n|||||||||||||||||||||||||||||||||\n"
 		resposta.append(i[0])
 		x, flag = percurso2(resposta,copia_aux,end_val,i[0],1)
-		# print "\n@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n"
-		# print "X RETORNADO: ",x
 		if(x!=0):
-			# print "\nX diferente de zero"
 			
 			if(flag!=0):
 				return 1,resposta
 			return 1,0
-	# print "\nRETORNA 0"
+		elif(x==0):
+			resposta.remove(resposta[len(resposta)-1])
 
 	return 0,0
 
@@ -221,67 +285,83 @@ def ajustaCaminho(m, perc, mOriginal,p):
 	
 	valor = 0
 	valorReal = []
+	posValorReal = []
+	
 	for i in range(len(perc)):
 		if i%2 != 0 and i != len(perc)-1:
 			valorReal.append(m[perc[i][0]][perc[i][1]][0])
+			posValorReal.append(perc[i])
 				
 	menorValor = min(valorReal)
 	
+	for i in range(len(valorReal)):
+		if(valorReal[i] == menorValor):
+			posCerto = posValorReal[i]
+	
 	for i in range(len(perc)):
-		# print i
 		if i%2 == 0 and i != 0 and i != len(perc)-1:
-			# print "\n AQUI +: ", m[perc[i][0]][perc[i][1]][0]
-			# print "Valor: ", menorValor
 			matrixNova[perc[i][0]][perc[i][1]][0] = m[perc[i][0]][perc[i][1]][0] + menorValor
 		elif i%2 != 0 and i != len(perc)-1:
 			matrixNova[perc[i][0]][perc[i][1]][0] = m[perc[i][0]][perc[i][1]][0] - menorValor
-			# print "\n AQUI -: ", m[perc[i][0]][perc[i][1]][0]
-			# print "Valor: ", menorValor
 		else:
-			# print "\n AQUI Proprio: ", m[perc[i][0]][perc[i][1]][0]
-			# print "Valor: ", menorValor
 			matrixNova[perc[i][0]][perc[i][1]][0] = menorValor		 
 
-	for i in range(len(m)):
-		for j in range(len(m[i])):
-			if matrixNova[i][j][0] == 0:
-				matrixNova[i][j][0] = None
+	matrixNova[posCerto[0]][posCerto[1]][0] = None
+	return matrixNova
+
+def exibeResultado(p,matrix):	
+	teste = copy.deepcopy(matrix)
+	matrixNova = matrix
+	for i in range(len(matrix)):
+		for j in range(len(matrix[i])):
+			matrixNova[i][j] = [None,int(matrix[i][j][1])]
+	
+	for i in range(len(p)):
+		matrixNova[p[i][0]][p[i][1]][0] = teste[p[i][0]][p[i][1]][0]
+
 
 	return matrixNova
 
-m = readFile("input.txt")
-mOriginal = readFile("input.txt")
-cam = cantoNoroeste(m)
-p = pegaPrincipais(m)
-while(1):
-	print "MATRIZ:    "
-	print m 
-# print cam
+def exibeSolucaoOtima(matrix,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos):
 
-	u,v = otimalidade(m)
-	print "\nU:   ",u
-	print "\nV:   ",v
+	for i in range(len(matrix)-1):
+		for j in range(len(matrix[0])-1):
+			if(m[i][j][0] != None):
+				if i < qtdOrigens and j < qtdTransbordos: 
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],origens[i],transbordos[j])
+				elif i < qtdOrigens and j >= qtdTransbordos:
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],origens[i],destinos[j-qtdTransbordos])
+				elif i >= qtdOrigens and j < qtdTransbordos:
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],transbordos[i-qtdOrigens],transbordos[j])
+				elif i >= qtdOrigens and j >= qtdTransbordos:
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],transbordos[i-qtdOrigens],destinos[j-qtdTransbordos])	
+
+
+m,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos, = start()
+mOriginal = copy.deepcopy(m)
+cam = cantoNoroeste(m)
+start_valor = 0
+
+while(1):
+	
+	p = pegaPrincipais(m)
+	u,v = otimalidade(m,start_valor)
 	
 	end_val,valor = fill(m,u,v)
-	print valor
 	if (valor == 0):
-		print "Solucao Otima"
-		print m
-		break
-
-# print "\nCaminho: ",cam
-# print "\nEnd_val: ",end_val
-# print "\n"
+		print("\nSolucao Otima\n")
+		mNova = exibeResultado(p,m)
+		print(mNova)
+		print "\n"
+		exibeSolucaoOtima(mNova,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos)
+		break	
 	
-	print cam
-	caminho_copia = list(cam)
+	caminho_copia = list(p)
 	resposta = []
 	resposta.append(end_val)
 	val = copy.deepcopy(end_val)
 	i,perc = percurso2(resposta,caminho_copia,end_val,val,1)
 
-	print "\n Perc: ", perc
 	m = ajustaCaminho(m, perc, mOriginal, p)
-	print m
-	print "FIMMM"
-	break
+	start_valor = start_valor + 1
+	

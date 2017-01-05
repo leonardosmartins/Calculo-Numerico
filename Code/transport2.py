@@ -99,7 +99,7 @@ def start():
 
 	
 
-	return matrix	
+	return matrix,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos	
 
 def createMatrix(lin, col):
 	matrix = []
@@ -364,11 +364,31 @@ def exibeResultado(p,matrix):
 
 	return matrixNova
 
+def exibeSolucaoOtima(matrix,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos):
 
+	for i in range(len(matrix)-1):
+		for j in range(len(matrix[0])-1):
+			if(m[i][j][0] != None):
+				if i < qtdOrigens and j < qtdTransbordos: 
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],origens[i],transbordos[j])
+					# valor = int(raw_input("Custo de %s para %s: " %(origens[i],transbordos[j])))
+					# matrix[i][j][1] = valor
+				elif i < qtdOrigens and j >= qtdTransbordos:
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],origens[i],destinos[j-qtdTransbordos])	
+					# valor = int(raw_input("Custo de %s para %s: " %(origens[i],destinos[j-qtdTransbordos])))
+					# matrix[i][j][1] = valor
+				elif i >= qtdOrigens and j < qtdTransbordos:
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],transbordos[i-qtdOrigens],transbordos[j]) 
+					# valor = int(raw_input("Custo de %s para %s: " %(transbordos[i-qtdOrigens],transbordos[j])))
+					# matrix[i][j][1] = valor
+				elif i >= qtdOrigens and j >= qtdTransbordos:
+					print "Envia %d unidades de %s para %s" %(m[i][j][0],transbordos[i-qtdOrigens],destinos[j-qtdTransbordos])	
+					# valor = int(raw_input("Custo de %s para %s: " %(transbordos[i-qtdOrigens],destinos[j-qtdTransbordos])))
+					# matrix[i][j][1] = valor	
 
 
 # m = readFile("input.txt")
-m = start()
+m,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos, = start()
 # mOriginal = readFile("input.txt")
 mOriginal = copy.deepcopy(m)
 cam = cantoNoroeste(m)
@@ -387,7 +407,9 @@ while(1):
 	print(valor)
 	if (valor == 0):
 		print("Solucao Otima")
-		print(exibeResultado(p,m))
+		mNova = exibeResultado(p,m)
+		print(mNova)
+		exibeSolucaoOtima(mNova,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos)
 		break	
 	
 	caminho_copia = list(p)
