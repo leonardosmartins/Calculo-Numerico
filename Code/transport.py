@@ -1,6 +1,9 @@
 import copy
 import time
 
+# Alunos: Leonardo da Silva Martins - 11321BCC032
+#		  Diego de Pontes Pasquini	
+
 def fillZero(matrix):
 	for i in range(len(matrix)):
 		for j in range(len(matrix[i])):
@@ -337,17 +340,23 @@ def exibeSolucaoOtima(matrix,origens,destinos,transbordos,qtdOrigens,qtdDestinos
 					print "Envia %d unidades de %s para %s" %(m[i][j][0],transbordos[i-qtdOrigens],destinos[j-qtdTransbordos])	
 
 
+#comeca o programa pegando as informacoes do usuario
 m,origens,destinos,transbordos,qtdOrigens,qtdDestinos,qtdTransbordos, = start()
+#faz uma copia da matriz original
 mOriginal = copy.deepcopy(m)
+#aplica o canto noroeste
 cam = cantoNoroeste(m)
 start_valor = 0
 
 while(1):
 	
+	#cria um vetor p com as posicoes das variaves basicas
 	p = pegaPrincipais(m)
+	#aplica a otimalidade, calculando os vetores U e V
 	u,v = otimalidade(m,start_valor)
-	
+	#preenche a matriz com as variaveis nao basicas a partir dos vetores U e V
 	end_val,valor = fill(m,u,v)
+	#verifica se chegou na solucao otima
 	if (valor == 0):
 		print("\nSolucao Otima\n")
 		mNova = exibeResultado(p,m)
@@ -360,8 +369,9 @@ while(1):
 	resposta = []
 	resposta.append(end_val)
 	val = copy.deepcopy(end_val)
+	#cria um vetor com as posicoes do caminho de ajuste encontrado
 	i,perc = percurso2(resposta,caminho_copia,end_val,val,1)
-
+	#ajusta os valores do caminho de ajuste, somando e subtraindo o valor encontrado
 	m = ajustaCaminho(m, perc, mOriginal, p)
 	start_valor = start_valor + 1
 	
